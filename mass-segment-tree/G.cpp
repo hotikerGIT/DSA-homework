@@ -5,59 +5,89 @@
 #include <string>
 
 struct Node {
-    int max_y;
-    std::set<int> y_coords;
+    int max_y = 0;
+    std::set<int> ys;
+
+    Node() = default;
+};
+
+struct TreeIndex {
+    int index, tree_left, tree_right;
 };
 
 class SegmentTree {
 private:
     std::vector<int> coords_x;
     int n;
-    std::vector<std::set<std::pair<int, int>>> tree;
+    std::vector<Node> tree;
+    std::vector<TreeIndex> query_indexes;
 
     void add(int index, int tree_left, int tree_right, int x, int y) {
-        tree[index].insert({x, y});
-        if (tree_left == tree_right) return;
+        if (tree_left == tree_right) {
+            tree[index].ys.insert(y);
+            tree[index].max_y = std::max(tree[index].max_y, y);
+            return;
+        }
+
         int tree_mid = (tree_left + tree_right) / 2;
         if (x <= coords_x[tree_mid])
             add(index * 2, tree_left, tree_mid, x, y);
         else
             add(index * 2 + 1, tree_mid + 1, tree_right, x, y);
+
+        tree[index].max_y = std::max(tree[index * 2].max_y, tree[index * 2 + 1].max_y);
     }
 
     void remove(int index, int tree_left, int tree_right, int x, int y) {
-        tree[index].erase({x, y});
-        if (tree_left == tree_right) return;
+        if (tree_left == tree_right) {
+            tree[index].ys.erase(y);
+            tree[index].max_y = tree[index].ys.empty() ? 0 : *tree[index].ys.rbegin();
+            return;
+        }
+
         int tree_mid = (tree_left + tree_right) / 2;
         if (x <= coords_x[tree_mid])
             remove(index * 2, tree_left, tree_mid, x, y);
         else
             remove(index * 2 + 1, tree_mid + 1, tree_right, x, y);
+
+        tree[index].max_y = std::max(tree[index * 2].max_y, tree[index * 2 + 1].max_y);
     }
 
-    void get(int index, int tree_left, int tree_right, int x0, int y0, std::pair<int, int>& res) {
+    void get(int index, int tree_left, int tree_right, int x0, int y0) {
         if (coords_x[tree_right] < x0 + 1) return;
         if (coords_x[tree_left] >= x0 + 1) {
-            auto it = tree[index].lower_bound({x0 + 1, -1});
-            if (it != tree[index].end()) {
-                if (res.first == -1 ||
-                    it->first < res.first ||
-                    (it->first == res.first && it->second < res.second)) {
-                    res = *it;
-                }
-            }
+            if (tree[index].max_y > y0) query_indexes.emplace_back(index, tree_left, tree_right);
             return;
         }
+
         int tree_mid = (tree_left + tree_right) / 2;
-        get(index * 2, tree_left, tree_mid, x0, y0, res);
-        get(index * 2 + 1, tree_mid + 1, tree_right, x0, y0, res);
+        get(index * 2, tree_left, tree_mid, x0, y0);
+        get(index * 2 + 1, tree_mid + 1, tree_right, x0, y0);
+    }
+
+    std::pair<int, int> descend(int index, int tree_left, int tree_right, int y0) {
+        if (tree_left == tree_right) {
+            auto it = tree[index].ys.upper_bound(y0);
+            if (it != tree[index].ys.end()) {
+                return {coords_x[tree_left], *it};
+            }
+            return {-1, -1};
+        }
+
+        if (tree[index].max_y <= y0) return {-1, -1};
+
+        int tree_mid = (tree_left + tree_right) / 2;
+        auto left = descend(index * 2, tree_left, tree_mid, y0);
+        if (left.first != -1) return left;
+        return descend(index * 2 + 1, tree_mid + 1, tree_right, y0);
     }
 
 public:
-    SegmentTree(const std::set<int>& cy)
-        : coords_x(cy.begin(), cy.end())
-        , n(coords_x.size())
-        , tree(4 * n) {}
+    SegmentTree(const std::set<int>& cx)
+            : coords_x(cx.begin(), cx.end())
+            , n(coords_x.size())
+            , tree(4 * n) {}
 
     void insert(int x, int y) {
         add(1, 0, n - 1, x, y);
@@ -68,13 +98,19 @@ public:
     }
 
     void out(int x, int y) {
-        std::pair<int, int> res = {-1, -1};
-        get(1, 0, n - 1, x, y, res);
-        if (res.first == -1) {
-            std::cout << -1 << '\n';
-            return;
+        query_indexes.clear();
+        query_indexes.reserve(20);
+        get(1, 0, n - 1, x, y);
+
+        for (auto & query_index : query_indexes) {
+            auto res = descend(query_index.index, query_index.tree_left, query_index.tree_right, y);
+            if (res.first != -1) {
+                std::cout << res.first << ' ' << res.second << '\n';
+                return;
+            }
         }
-        std::cout << res.first << ' ' << res.second << '\n';
+
+        std::cout << "-1\n";
     }
 };
 
@@ -93,19 +129,17 @@ int main() {
     std::cin >> q;
     std::vector<Query> queries;
     queries.reserve(q);
-    std::set<int> coords_y;
+    std::set<int> coords_x;
 
     for (int i = 0; i < q; ++i) {
         std::string type;
         int x, y;
         std::cin >> type >> x >> y;
         queries.emplace_back(type, x, y);
-        if (type != "find") {
-            coords_y.insert(y);
-        }
+        coords_x.insert(x);
     }
 
-    SegmentTree T(coords_y);
+    SegmentTree T(coords_x);
 
     for (const auto& Q : queries) {
         if (Q.type == "add") T.insert(Q.x, Q.y);
@@ -113,42 +147,5 @@ int main() {
         else T.out(Q.x, Q.y);
     }
 
-    return 0;
-}
-
-
-
-#include  <iostream>
-#include  <vector>
-
-using namespace std;
-
-#define int long long
-
-void solve() {
-    int n, q;
-    cin >> n >> q;
-    vector<int> data(n);
-    for (autol& el: data) {cin >> el;}
-
-    for (int i = 0; i < q; i++) {
-        int tp, a, b;
-        cin >> tp >> a >> b;
-        if (tp == 0) {
-
-        }
-    }
-}
-
-signed main() {
-    cin.tie();
-    cout.tie();
-    ios_base::sync_with_stdio(false);
-
-    int cr = 1;
-    //cin >> cr;
-    for (int i = 0 ; i < cr; i++) {
-        solve();
-    }
     return 0;
 }

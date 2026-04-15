@@ -27,9 +27,10 @@ private:
     }
 
     void query(int index, int tree_left, int tree_right, int left, int right, int x) {
+        if (count_for_query >= 2) return;
         if (left > right) return;
         if (tree_left == left && tree_right == right) {
-            descend(index, x);
+            descend(index, tree_left, tree_right, x);
             return;
         }
 
@@ -39,20 +40,22 @@ private:
     }
 
     // спуск по дереву с обновлением счетчика
-    void descend(int index, int x) {
+    void descend(int index, int left, int right, int x) {
+        if (count_for_query >= 2) return;
         if (tree[index] % x == 0) return;
-        if (index * 2 >= tree.size()) {
-            count_for_query += tree[index] % x == 0;
+        if (left == right) {
+            count_for_query += tree[index] % x != 0;
             return;
         }
 
-        if (tree[index * 2] % x && tree[index * 2 + 1]) {
+        if (tree[index * 2] % x && tree[index * 2 + 1] % x) {
             count_for_query = 2;
             return;
         }
 
-        descend(index * 2, x);
-        descend(index * 2 + 1, x);
+        int mid = (left + right) / 2;
+        descend(index * 2, left, mid, x);
+        descend(index * 2 + 1, mid + 1, right, x);
     }
 
     void update(int index, int tree_left, int tree_right, int pos, int new_value) {
@@ -86,11 +89,14 @@ public:
     }
 
     void set(int pos, int val) {
-        update(1, 0, n - 1, pos, val);
+        update(1, 0, n - 1, pos - 1, val);
     }
 };
 
 int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    std::cout.tie(nullptr);
     int n;
     std::cin >> n;
     std::vector<int> a(n);
@@ -107,7 +113,8 @@ int main() {
             int l, r, x;
             std::cin >> l >> r >> x;
 
-            std::cout << T.get(l, r, x);
+            if (T.get(l, r, x)) std::cout << "YES\n";
+            else std::cout << "NO\n";
         }
 
         else {

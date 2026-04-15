@@ -1,64 +1,77 @@
 #include <iostream>
-#include <string>
 #include <vector>
+#include <string>
 #include <unordered_set>
-#include <algorithm>
+#define int long long
 
-bool cmp(std::string& a, std::string& b) {
-    return a.size() < b.size();
-}
+int p = 31;
+int mod = 1e9 + 9;
+std::vector<int> powers(1e4 + 5, 1);
 
-int main() {
-    int k;
-    std::cin >> k;
-
-    int p = 31;
-    int mod = 1e9 + 9;
-
-    std::vector<std::string> strings(k);
-    std::vector<std::vector<long long>> prefix_hashes(k);
-    std::vector<long long> powers(1e4 + 3, 1);
-    for (int i = 1; i < powers.size(); ++i) powers[i] = powers[i - 1] * p % mod;
-
-    for (int i = 0; i < k; ++i) std::cin >> strings[i];
-    std::sort(strings.begin(), strings.end(), cmp);
-    for (int i = 0; i < k; ++i) {
-        std::string& s = strings[i];
-        prefix_hashes[i].resize(s.size() + 1);
-
-        for (int j = 0; j < s.size(); ++j) {
-            prefix_hashes[i][j + 1] = (prefix_hashes[i][j] * p + s[j] - 'a' + 1) % mod;
-        }
-    }
-
-    std::unordered_set<long long> hashes_of_common_substrings;
-    std::unordered_set<long long> next_gen;
-    int max_len = strings[0].size();
-    std::string candidate;
-
-    for (int i = 0; i < k; ++i) {
-        std::string& s = strings[i];
+std::string decision(std::vector<std::string>& strs, std::vector<std::vector<int>>& hashes, int assumption) {
+    std::pair<int, int> res_pos;
+    std::unordered_set<int> cur_gen, next_gen;
+    for (int k = 0; k < strs.size(); ++k) {
         next_gen.clear();
-        int max_len_on_iter = -1;
 
-        for (int len = max_len; len > 0; --len) {
-            for (int pos = 0; pos + len <= s.size(); ++pos) {
-                long long hash = (prefix_hashes[i][pos + len] - prefix_hashes[i][pos] * powers[len]) % mod;
-                if (hash < mod) hash += mod;
+        for (int pos = 0; pos + assumption <= strs[k].size(); ++pos) {
+            int comparison_hash = (hashes[k][pos + assumption] - hashes[k][pos] * powers[assumption]) % mod;
+            if (comparison_hash < 0) comparison_hash += mod;
 
-                if (i == 0 || hashes_of_common_substrings.contains(hash)) {
-                    next_gen.insert(hash);
-                    if (max_len_on_iter == -1) {
-                        max_len_on_iter = len;
-                        candidate = s.substr(pos, len);
-                    }
-                }
+            if (cur_gen.empty() || cur_gen.contains(comparison_hash)) {
+                next_gen.insert(comparison_hash);
+                res_pos = {k, pos};
             }
         }
 
-        std::swap(next_gen, hashes_of_common_substrings);
-        max_len = max_len_on_iter;
+        std::swap(next_gen, cur_gen);
+        if (cur_gen.empty()) break;
     }
 
-    std::cout << candidate << std::endl;
+    if (cur_gen.empty()) return "";
+    return strs[res_pos.first].substr(res_pos.second, assumption);
+}
+
+signed main() {
+    freopen("substr.in", "r", stdin);
+    freopen("substr.out", "w", stdout);
+
+    int k;
+    std::cin >> k;
+    std::vector<std::string> strings(k);
+    int min_size = 1e9;
+    for (int i = 0; i < k; ++i) {
+        std::cin >> strings[i];
+        min_size = std::min((int)strings[i].size(), min_size);
+    }
+
+    for (int i = 1; i < 1e4 + 5; ++i) {
+        powers[i] = powers[i - 1] * p % mod;
+    }
+
+    std::vector<std::vector<int>> prefix_hashes(k);
+    for (int i = 0; i < k; ++i) {
+        prefix_hashes[i].resize(strings[i].size() + 1);
+        for (int j = 0; j < strings[i].size(); ++j) {
+            prefix_hashes[i][j + 1] = (p * prefix_hashes[i][j] + strings[i][j] - 'a' + 1) % mod;
+        }
+    }
+
+    int left = 0;
+    int right = min_size;
+    std::string answer;
+    while (left <= right) {
+        int middle = (left + right) / 2;
+
+        std::string tmp = decision(strings, prefix_hashes, middle);
+        if (!tmp.empty()) {
+            left = middle + 1;
+            answer = tmp;
+        }
+        else {
+            right = middle - 1;
+        }
+    }
+
+    std::cout << answer;
 }

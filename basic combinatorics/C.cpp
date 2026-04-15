@@ -1,21 +1,22 @@
 #include <iostream>
-#include <string>
 #include <cmath>
+#include <string>
 
 int main() {
-    int t, n, i, j, k;
+    long long t, n, i, j, k;
     std::cin >> t;
 
     while (t--) {
         std::cin >> n >> k;
+        k--;
 
-        i = (std::ceil(std::pow(1 + 8 * k, 0.5)) - 1) / 2 + 1;
+        i = std::floor((std::pow(1 + 8 * k, 0.5) + 1) / 2);
         j = k - i * (i - 1) / 2;
 
         std::string res(n, 'a');
         res[n - 1 - i] = 'b';
         res[n - 1 - j] = 'b';
 
-        std::cout << res << std::endl;
+        std::cout << res << "\n";
     }
 }
