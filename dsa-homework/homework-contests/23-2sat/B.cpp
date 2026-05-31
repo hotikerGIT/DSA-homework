@@ -1,12 +1,8 @@
 #include <iostream>
 #include <vector>
+#include <map>
+#include <set>
 #include <functional>
-
-
-struct Edge {
-    int from{}, to{};
-    bool is_good = false;
-};
 
 std::vector<int> find_components(std::vector<std::vector<int>>& graph) {
     int size = graph.size();
@@ -86,40 +82,70 @@ std::vector<int> sat2(std::vector<std::pair<int, int>>& statement, int n) {
 }
 
 int main() {
-    int n, m;
-    std::cin >> n >> m;
-    std::vector<std::pair<int, int>> statement;
-    statement.reserve(4 * m);
-    for (int i = 0; i < m; ++i) {
-        int a, b, c;
-        std::cin >> a >> b >> c;
+    int n, a, b;
+    std::cin >> n >> a >> b;
+    std::vector<int> numbers(n);
+    std::set<int> sorted_numbers;
+    for (int i = 0; i < n; ++i) {
+        std::cin >> numbers[i];
+        sorted_numbers.insert(numbers[i]);
+    }
 
-        if (c) {
-            statement.emplace_back(a, -b);
-            statement.emplace_back(-a, b);
-        } else {
-            statement.emplace_back(a, b);
-            statement.emplace_back(-a, -b);
+    std::map<int, int> cords;
+    int index = 1;
+    for (int num : sorted_numbers) {
+        cords[num] = index++;
+    }
+
+    std::vector<int> out(n + 1, -1);
+    for (int num : numbers) {
+        bool flag_a = sorted_numbers.contains(a - num);
+        bool flag_b = sorted_numbers.contains(b - num);
+
+        if (!flag_a && !flag_b) {
+            std::cout << "NO\n";
+            return 0;
+        }
+
+        if (!flag_a) {
+            out[cords[num]] = 1;
+        }
+
+        if (!flag_b) {
+            out[cords[num]] = 0;
         }
     }
 
-    auto sat = sat2(statement, n);
-    if (sat.empty()) {
-        std::cout << "Impossible\n";
+    std::vector<std::pair<int, int>> statement;
+    statement.reserve(5 * n);
+    for (int x : numbers) {
+        int a_ = cords[a - x];
+        int b_ = cords[b - x];
+        int x_ = cords[x];
+
+        if (out[cords[x]] == 0) {
+            statement.emplace_back(-a_, -a_);
+        } else if (out[cords[x]] == 1) {
+            statement.emplace_back(b_, b_);
+        } else {
+            statement.emplace_back(-a_, x_);
+            statement.emplace_back(-x_, b_);
+            statement.emplace_back(-a_, b_);
+        }
+    }
+
+    auto res = sat2(statement, cords.size());
+    if (res.empty()) {
+        std::cout << "NO\n";
         return 0;
     }
 
-    int total = 0;
-    std::vector<int> res;
-    for (int v = 1; v <= n; ++v) {
-        if (sat[v]) {
-            total++;
-            res.push_back(v);
+    std::cout << "YES\n";
+    for (int x : numbers) {
+        if (out[cords[x]] != -1) {
+            std::cout << out[cords[x]] << ' ';
+        } else {
+            std::cout << res[cords[x]] << ' ';
         }
-    }
-
-    std::cout << total << '\n';
-    for (int num : res) {
-        std::cout << num << ' ';
     }
 }

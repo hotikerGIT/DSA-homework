@@ -1,12 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <set>
 #include <functional>
-
-
-struct Edge {
-    int from{}, to{};
-    bool is_good = false;
-};
 
 std::vector<int> find_components(std::vector<std::vector<int>>& graph) {
     int size = graph.size();
@@ -85,41 +80,68 @@ std::vector<int> sat2(std::vector<std::pair<int, int>>& statement, int n) {
     return res;
 }
 
+std::pair<int, int> is_less_than(std::vector<int>& a, std::vector<int>& b) {
+    int index = 0;
+    while (index < a.size() && index < b.size() && a[index] == b[index]) index++;
+
+    if (index == a.size() && index == b.size()) return {0, -1};
+    if (index == a.size()) return {1, -1};
+    if (index == b.size()) return {-1, -1};
+
+    return std::make_pair<int, int>((a[index] < b[index] ? 1 : -1), (int)index);
+}
+
 int main() {
     int n, m;
     std::cin >> n >> m;
     std::vector<std::pair<int, int>> statement;
-    statement.reserve(4 * m);
-    for (int i = 0; i < m; ++i) {
-        int a, b, c;
-        std::cin >> a >> b >> c;
+    statement.reserve(2 * n);
 
-        if (c) {
-            statement.emplace_back(a, -b);
-            statement.emplace_back(-a, b);
-        } else {
-            statement.emplace_back(a, b);
-            statement.emplace_back(-a, -b);
+    int l;
+    std::cin >> l;
+    std::vector<int> last_string(l);
+    for (int i = 0; i < l; ++i) std::cin >> last_string[i];
+
+    for (int i = 0; i < n - 1; ++i) {
+        std::cin >> l;
+        std::vector<int> string(l);
+        for (int j = 0; j < l; ++j) std::cin >> string[j];
+
+        auto [comparison, index] = is_less_than(last_string, string);
+        if (comparison == 0) continue;
+        if (index == -1) {
+            if (comparison == 1) {
+                std::swap(string, last_string);
+                continue;
+            }
+            if (comparison == -1) {
+                std::cout << "No\n";
+                return 0;
+            }
         }
+        if (comparison == 1) {
+            statement.emplace_back(last_string[index], -string[index]);
+        } else {
+            statement.emplace_back(last_string[index], last_string[index]);
+            statement.emplace_back(-string[index], -string[index]);
+        }
+
+        std::swap(string, last_string);
     }
 
-    auto sat = sat2(statement, n);
-    if (sat.empty()) {
-        std::cout << "Impossible\n";
+    auto res = sat2(statement, m);
+    if (res.empty()) {
+        std::cout << "No\n";
         return 0;
     }
 
+    std::cout << "Yes\n";
     int total = 0;
-    std::vector<int> res;
-    for (int v = 1; v <= n; ++v) {
-        if (sat[v]) {
-            total++;
-            res.push_back(v);
-        }
+    for (bool bit : res) {
+        total += bit;
     }
-
     std::cout << total << '\n';
-    for (int num : res) {
-        std::cout << num << ' ';
+    for (int num = 1; num <= m; ++num) {
+        if (res[num]) std::cout << num << ' ';
     }
 }
