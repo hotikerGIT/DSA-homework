@@ -2,7 +2,6 @@
 #include <ranges>
 #include <vector>
 #include <string>
-#include <map>
 
 std::vector<int> prefix_function(const std::string& s) {
     std::vector<int> pref_func(s.size());
