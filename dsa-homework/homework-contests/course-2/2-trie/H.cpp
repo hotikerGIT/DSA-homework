@@ -98,7 +98,7 @@ struct Aho {
     }
 
     int move(int state, char c) {
-        return nodes[state].go_to[c];
+        return nodes[state].go_to[c - 'a'];
     }
 
     int get_comp_link(int state) {
@@ -109,10 +109,19 @@ struct Aho {
 int solve(int cnt, int size, std::deque<int>& entry) {
     if (entry.size() < cnt) return -1;
 
-    int best =
+    int best = 1e9;
+    for (int i = cnt - 1; i < entry.size(); ++i) {
+        best = std::min(best, entry[i] + size - entry[i - cnt + 1]);
+    }
+
+    return best;
 }
 
 int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    std::cout.tie(nullptr);
+
     std::string s;
     int n;
     std::cin >> s >> n;
@@ -137,12 +146,15 @@ int main() {
         char c = s[i];
         state = AC.move(state, c);
 
-        int link = AC.get_comp_link(state);
+        int link = state;
         while (link != -1) {
-            entry[AC.nodes[link].query_index].push_back(i - AC.nodes[link].substr_size);
+            Node& node = AC.nodes[link];
+            if (node.is_terminal) entry[node.query_index].push_back(i - node.substr_size);
             link = AC.get_comp_link(link);
         }
     }
 
-
+    for (int i = 0; i < n; ++i) {
+        std::cout << solve(query[i].first, query[i].second, entry[i]) << '\n';
+    }
 }
