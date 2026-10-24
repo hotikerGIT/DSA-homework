@@ -1,7 +1,9 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#define int long long
 
-int main() {
+signed main() {
     int n, k, m;
     std::cin >> n >> k >> m;
     std::vector<int> cost(n), energy(n), time(n);
@@ -11,32 +13,40 @@ int main() {
         std::cin >> time[i];
     }
 
-    std::vector dp(k + 1, std::vector(m + 1, 0));
-    std::vector take(k + 1, std::vector(m + 1, -1));
+    std::vector dp(n + 1, std::vector(k + 1, std::vector(m + 1, 0)));
+    std::vector take(n + 1, std::vector(k + 1, std::vector(m + 1, -1)));
 
-    for (int i = 0; i < n; ++i) {
-        for (int j = k; j - energy[i] >= 0; --j) {
-            for (int p = m; p - time[i] >= 0; --p) {
-                int next = dp[j - energy[i]][p - time[i]] + cost[i];
-                if (dp[j][p] < next) {
-                    dp[j][p] = next;
-                    take[j][p] = i;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = k; j >= 0; --j) {
+            for (int p = m; p >= 0; --p) {
+                if (dp[i][j][p] < dp[i - 1][j][p]) {
+                    dp[i][j][p] = dp[i - 1][j][p];
+                    take[i][j][p] = take[i - 1][j][p];
+                }
+
+                if (j - energy[i - 1] < 0 ||
+                    p - time[i - 1] < 0) continue;
+
+                int next = dp[i - 1][j - energy[i - 1]][p - time[i - 1]] + cost[i - 1];
+                if (dp[i][j][p] < next) {
+                    dp[i][j][p] = next;
+                    take[i][j][p] = i;
                 }
             }
         }
     }
 
-    std::cout << dp.back().back() << '\n';
-    int index = take.back().back();
+    std::cout << dp.back().back().back() << '\n';
+    int index = take.back().back().back();
     std::vector<int> res;
-    while (index != -1) {
+    while (index > 0) {
         res.push_back(index);
-        k -= energy[index];
-        m -= time[index];
-        index = take[k][m];
+        k -= energy[index - 1];
+        m -= time[index - 1];
+        index = take[index - 1][k][m];
     }
 
-    for (int i = res.size() - 1; i >= 0; --i) {
-        std::cout << res[i] + 1 << ' ';
-    }
+    std::sort(res.begin(), res.end());
+
+    for (int num : res) std::cout << num << ' ';
 }

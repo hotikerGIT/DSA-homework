@@ -1,171 +1,143 @@
 #include <iostream>
 #include <vector>
+#include <map>
+#include <numeric>
 #include <algorithm>
 #include <string>
+#include <functional>
+
+#define ll long long
+#define int long long
 
 using namespace std;
 
-#define int long long
-using ll = long long;
+const ll MAXLEN = 5005;
 
 struct state {
-    int max_len = 0;
-    int next[26];
-    int suf_link = -1;
-    int occ = 0;
-    int cost = 0;
-
-    state() {
-        std::fill(next, next + 26, -1);
-    }
+    ll right_index = -1;
+    ll max_len = 0;
+    map<char, ll> next;
+    ll suf_link = -1;
+    ll occ = 0;
 };
 
 class SufAuto {
 public:
     vector<state> st;
-    int last = 0;
+    ll last = 0;
 
     SufAuto() {
-        st.reserve(2);
+        st.reserve(2 * MAXLEN + 1);
         st.emplace_back();
+        last = 0;
+    }
+
+    void add_string(const std::string& s, int cost) {
+        for (char c : s) {
+            AddLetter(c, cost);
+        }
         last = 0;
     }
 
     void AddLetter(char ch, int cost) {
-        int c = ch - 'a';
+        st.emplace_back();
+        ll cur = st.size() - 1;
+        st[cur].max_len = st[last].max_len + 1;
+        st[cur].occ = 1;
+        st[cur].right_index = st[last].right_index+1;
 
-        if (st[last].next[c] != -1) {
-            int q = st[last].next[c];
-            if (st[q].max_len == st[last].max_len + 1) {
-                st[q].occ += 1;
-                st[q].cost += cost;
-                last = q;
-                return;
+        ll p = last;
+        do {
+            for (; p > -1 && st[p].next.count(ch) == 0; p = st[p].suf_link) {
+                st[p].next[ch] = cur;
+            }
+            if (p == -1) {
+                st[cur].suf_link = 0;
+                break;
+            }
+
+            ll q = st[p].next[ch];
+            if (st[p].max_len+1 == st[q].max_len){
+                st[cur].suf_link = q;
+                break;
             }
 
             st.emplace_back();
-            int clone = (int)st.size() - 1;
-            st[clone].max_len = st[last].max_len + 1;
-            st[clone].suf_link = st[q].suf_link;
-            st[clone].occ = 1;
-            st[clone].cost = cost;
-            std::copy(std::begin(st[q].next), std::end(st[q].next),
-                      std::begin(st[clone].next));
+            ll qv = st.size()-1;
 
-            int p = last;
-            while (p != -1 && st[p].next[c] == q) {
-                st[p].next[c] = clone;
-                p = st[p].suf_link;
+            st[qv].next = st[q].next;
+
+            st[qv].suf_link = st[q].suf_link;
+            st[q].suf_link = qv;
+            st[cur].suf_link = qv;
+
+            st[qv].max_len = st[p].max_len+1;
+            st[qv].right_index = st[q].right_index;
+
+            for (; p > -1 && st[p].next[ch] == q; p = st[p].suf_link) {
+                st[p].next[ch] = qv;
             }
-            st[q].suf_link = clone;
-            last = clone;
-            return;
-        }
 
-        st.emplace_back();
-        int cur = (int)st.size() - 1;
-        st[cur].max_len = st[last].max_len + 1;
-        st[cur].occ = 1;
-        st[cur].cost = cost;
-
-        int p = last;
-        while (p != -1 && st[p].next[c] == -1) {
-            st[p].next[c] = cur;
-            p = st[p].suf_link;
-        }
-
-        if (p == -1) {
-            st[cur].suf_link = 0;
-        } else {
-            int q = st[p].next[c];
-            if (st[p].max_len + 1 == st[q].max_len) {
-                st[cur].suf_link = q;
-            } else {
-                st.emplace_back();
-                int clone = (int)st.size() - 1;
-
-                st[clone].max_len = st[p].max_len + 1;
-                st[clone].suf_link = st[q].suf_link;
-                st[clone].occ = 0;
-                st[clone].cost = 0;
-                std::copy(std::begin(st[q].next), std::end(st[q].next),
-                          std::begin(st[clone].next));
-
-                while (p != -1 && st[p].next[c] == q) {
-                    st[p].next[c] = clone;
-                    p = st[p].suf_link;
-                }
-
-                st[q].suf_link = clone;
-                st[cur].suf_link = clone;
-            }
-        }
+        } while(false);
 
         last = cur;
     }
 
-    void add_string(const string& s, int cost) {
-        last = 0;
-        for (char ch : s) {
-            AddLetter(ch, cost);
+    void calc() {
+        int n = st.size();
+        vector<int> order(n);
+        iota(order.begin(), order.end(), 0);
+
+        sort(order.begin(), order.end(), [&](int a, int b) {
+            return st[a].max_len > st[b].max_len;
+        });
+
+        for (int v : order) {
+            if (st[v].suf_link != -1) {
+                st[st[v].suf_link].occ += st[v].occ;
+            }
         }
     }
 
-    void calc() {
-        int n = (int)st.size();
-        int max_len = 0;
-        for (const auto& s : st) {
-            if (s.max_len > max_len) max_len = s.max_len;
+    bool has_unique_word(const std::string& word) {
+        int cur = 0;
+
+        for (char c : word) {
+            if (!st[cur].next.contains(c)) return false;
+            cur = st[cur].next[c];
         }
 
-        vector<int> cnt(max_len + 1, 0);
-        for (const auto& s : st) {
-            ++cnt[s.max_len];
+        return st[cur].occ == 1;
+    }
+
+    int max_prefix(const std::string& word) {
+        int cur = 0;
+        int res = 0;
+
+        for (char c : word) {
+            if (!st[cur].next.contains(c)) return res;
+            cur = st[cur].next[c];
+            ++res;
         }
 
-        for (int i = 1; i <= max_len; ++i) {
-            cnt[i] += cnt[i - 1];
-        }
-
-        vector<int> order(n);
-        for (int i = n - 1; i >= 0; --i) {
-            int len = st[i].max_len;
-            order[--cnt[len]] = i;
-        }
-
-        for (int i = n - 1; i >= 0; --i) {
-            int v = order[i];
-            int suf_link = st[v].suf_link;
-            if (suf_link != -1) {
-                st[suf_link].occ += st[v].occ;
-                st[suf_link].cost += st[v].cost;
-            }
-        }
+        return res;
     }
 };
 
 signed main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
     int n;
-    cin >> n;
+    std::cin >> n;
+    auto SM = SufAuto();
     std::vector<std::string> strings(n);
-    std::vector<int> costs(n);
 
-    SufAuto SM;
-    for (int i = 0; i < n; ++i) std::cin >> strings[i];
+    for (int i = 0; i < n; ++i) {
+        std::cin>>strings[i];
+    }
+
+    std::vector<int> costs(n);
     for (int i = 0; i < n; ++i) std::cin >> costs[i];
 
     for (int i = 0; i < n; ++i) {
         SM.add_string(strings[i], costs[i]);
     }
-    SM.calc();
-
-    int res = 0;
-    for (auto& state : SM.st) {
-        res = std::max(res, state.cost * state.max_len);
-    }
-
-    std::cout << res;
 }
