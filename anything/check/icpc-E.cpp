@@ -1,5 +1,8 @@
 // clang-format off
-#include <bits/stdc++.h>
+#include <vector>
+#include <iostream>
+#include <map>
+#include <set>
 using namespace std;
 
 using ll = long long; using ull = unsigned long long; using ld = long double;
@@ -123,6 +126,18 @@ void solve() {
     std::vector<int> primes(pr_set.begin(), pr_set.end());
     int res = 0;
 
+    vector<long long> b_primes;
+    for (auto [p, c] : f2) b_primes.push_back(p);
+
+    auto is_school = [&](long long n) {
+        long long p = n;
+        for (long long q : b_primes) {
+            while (p % q == 0) p /= q;
+        }
+        if (p == 1) return true;
+        return (b - 1) % p == 0 || (b + 1) % p == 0;
+    };
+
     // стек хранит пары (индекс простого, текущее произведение)
     std::vector<std::pair<int, long long>> st;
     st.push_back({0, 1});
@@ -141,7 +156,7 @@ void solve() {
         while (true) {
             cur *= primes[idx];
             if (cur >= b) break;
-            ++res;                          // нашли новое число < b
+            res += is_school(cur);                          // нашли новое число < b
             st.push_back({idx + 1, cur});   // переходим к следующему простому
         }
     }

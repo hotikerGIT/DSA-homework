@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <algorithm>
 #define int long long
 
 int bin_pow(int number, int power, int mod) {
@@ -20,35 +21,40 @@ signed main() {
 
     int match = 0;
     for (int i = 0; i < n; ++i) match += s[i] == t[i];
-    std::vector dp(m + 1, std::vector<int>(n + 1, 0ll));
-    dp[0][match] = 1;
+    std::vector dp(n + 1, 0ll), next(n + 1, 0ll);
+    dp[match] = 1;
 
+    int bp = bin_pow(25, n, mod);
     for (int i = 1; i <= m; ++i) {
-        for (int j = 0; j <= n; ++j) {
-            int better = j == 0 ? 0 : dp[i - 1][j - 1] * (n - j + 1) % mod;
-            int worse = j == n ? 0 : dp[i - 1][j + 1] * 25 * (j + 1) % mod;
-            int even = j == n ? 0 : dp[i - 1][j] * 24 * (n - j) % mod;
+        std::fill(next.begin(), next.end(), 0);
 
-            dp[i][j] = better + worse + even;
-            dp[i][j] %= mod;
+        for (int j = 0; j <= n; ++j) {
+            int better = j == 0 ? 0 : dp[j - 1] * (n - j + 1) % mod;
+            int worse = j == n ? 0 : dp[j + 1] * 25 * (j + 1) % mod;
+            int even = j == n ? 0 : dp[j] * 24 * (n - j) % mod;
+
+            next[j] = better + worse + even;
+            next[j] %= mod;
 
             if (j == 0) {
                 for (int k = 0; k <= n; ++k) {
-                    dp[i][0] += dp[i - 1][k] * bin_pow(25, n, mod);
-                    dp[i][0] %= mod;
+                    next[0] += dp[k] * bp;
+                    next[0] %= mod;
                 }
 
-                dp[i][0] = (dp[i][0] + mod - dp[i - 1][0]) % mod;
+                next[0] = (next[0] + mod - dp[0]) % mod;
 
             } else if (j == n) {
                 for (int k = 0; k < n; ++k) {
-                    dp[i][j] += dp[i - 1][k];
-                    dp[i][j] %= mod;
+                    next[j] += dp[k];
+                    next[j] %= mod;
                 }
             }
         }
+
+        std::swap(dp, next);
     }
 
-    std::cout << dp.back().back();
+    std::cout << dp.back();
     return 0;
 }

@@ -18,7 +18,7 @@ struct state {
     ll max_len = 0;
     map<char, ll> next;
     ll suf_link = -1;
-    ll occ1 = 0;
+    ll occ = 0;
     ll occ2 = 0;
 };
 
@@ -42,7 +42,7 @@ public:
         st.emplace_back();
         ll cur = st.size() - 1;
         st[cur].max_len = st[last].max_len + 1;
-        st[cur].occ1 = 1;
+        st[cur].occ = 1;
         st[cur].right_index = st[last].right_index+1;
 
         ll p = last;
@@ -93,7 +93,7 @@ public:
 
         for (int v : order) {
             if (st[v].suf_link != -1) {
-                st[st[v].suf_link].occ1 += st[v].occ1;
+                st[st[v].suf_link].occ += st[v].occ;
             }
         }
     }
@@ -106,7 +106,7 @@ public:
             cur = st[cur].next[c];
         }
 
-        return st[cur].occ1 == 1;
+        return st[cur].occ == 1;
     }
 
     int max_prefix(const std::string& word) {
@@ -137,11 +137,11 @@ signed main() {
     std::function<void(int, int)> dfs = [&](int cur1, int cur2) {
         auto& state1 = SM1.st[cur1];
         auto& state2 = SM2.st[cur2];
-        state1.occ2 = state2.occ1;
+        state1.occ2 = state2.occ;
 
         int link_len1 = state1.suf_link != -1 ? SM1.st[state1.suf_link].max_len + 1 : 1e9;
         int link_len2 = state2.suf_link != -1 ? SM2.st[state2.suf_link].max_len + 1 : 1e9;
-        if (state1.occ1 == 1 && state1.occ2 == 1) res = std::min(res, std::max(link_len1, link_len2));
+        if (state1.occ == 1 && state1.occ2 == 1) res = std::min(res, std::max(link_len1, link_len2));
 
         for (auto& [ch, nxt] : state1.next) {
             if (state2.next.contains(ch)) {
