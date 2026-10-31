@@ -138,7 +138,7 @@ public:
             }
 
             if (i < n - 1) continue;
-            if (l < n)     continue;
+            if (l < n) continue;
 
             int u = v;
             while (st[u].suf_link != -1 && st[st[u].suf_link].max_len >= n)
