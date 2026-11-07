@@ -30,6 +30,10 @@ static bool chmin(T& a, const U& b) { return b < a ? (a = b, true) : false; }
 template <class T, class U>
 static bool chmax(T& a, const U& b) { return a < b ? (a = b, true) : false; }
 
+void get_vector(vector<int>& a, int n) {
+    for (int i = 0; i < n; ++i) std::cin >> a[i];
+}
+
 constexpr int INF = 0x3f3f3f3f3f3f3f3f;
 constexpr int MOD = 362880;
 
