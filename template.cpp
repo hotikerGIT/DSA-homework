@@ -1,12 +1,18 @@
 // clang-format off
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
+#include <ext/pb_ds/tree_policy.hpp>
+using namespace __gnu_pbds;
 using namespace std;
 
 #define int long long
 
 using vi = vector<int>; using vvi = vector<vi>;
 using pii = pair<int, int>; using vpii = vector<pii>;
+
+template<class T>
+using ordered_multiset = tree<T, null_type, std::less<T>,
+        rb_tree_tag, tree_order_statistics_node_update>;
 
 using H = decltype([](uint64_t x) {
     static const uint64_t r = chrono::steady_clock::now().time_since_epoch().count();
@@ -30,8 +36,16 @@ static bool chmin(T& a, const U& b) { return b < a ? (a = b, true) : false; }
 template <class T, class U>
 static bool chmax(T& a, const U& b) { return a < b ? (a = b, true) : false; }
 
-void get_vector(vector<int>& a, int n) {
-    for (int i = 0; i < n; ++i) std::cin >> a[i];
+template <class T>
+void get_vector(vector<T>& a) {
+    for (int i = 0; i < a.size(); ++i) std::cin >> a[i];
+}
+
+template <class T>
+vector<T> read_vector(int size) {
+    vector<T> res(size);
+    for (int i = 0; i < res.size(); ++i) std::cin >> res[i];
+    return res;
 }
 
 constexpr int INF = 0x3f3f3f3f3f3f3f3f;
